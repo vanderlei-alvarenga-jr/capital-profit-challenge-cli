@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Me (capital-profit-challenge-cli)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Build: capital-profit-challenge-cli.csproj",
+            "program": "${workspaceFolder}/capital-profit-challenge-cli/bin/Debug/net8.0/capital-profit-challenge-cli.dll",
+            "console": "integratedTerminal", //or internalConsole, or externalTerminal
+            "args": [
+                "process",
+                "--file-path",
+                ".\\capital-profit-challenge-cli\\files-to-process\\case-one.json"
+            ]
+        }
+    ]
+}
