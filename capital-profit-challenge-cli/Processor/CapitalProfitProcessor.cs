@@ -105,7 +105,7 @@ public class CapitalProfitProcessor
                 Debug.WriteLine($"transactionTotalValue = {transactionTotalValue}");
                 if (transactionTotalValue > 20000.00m && operationProfit > operationLoss && profitAccumulator > 0)
                 {
-                    taxToPay.Tax = profitAccumulator * 0.20m;
+                    taxToPay.Tax = decimal.Parse((profitAccumulator * 0.20m).ToString("0.00"));
                     Debug.WriteLine($"Tax applied over profit! Reset \"profitAccumulator\".");
                     profitAccumulator = 0;
                 }

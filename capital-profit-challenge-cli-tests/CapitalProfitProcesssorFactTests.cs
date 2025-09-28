@@ -13,18 +13,18 @@ public class CapitalProfitProcesssorFactTests
 
     private static readonly List<TaxToPayVO> expectedTaxesCase01 = new List<TaxToPayVO>
     {
-        new TaxToPayVO { Tax = 0.00m },
-        new TaxToPayVO { Tax = 0.00m },
-        new TaxToPayVO { Tax = 0.00m }
+        new TaxToPayVO { Tax = 0 },
+        new TaxToPayVO { Tax = 0 },
+        new TaxToPayVO { Tax = 0 }
     };
 
     private static readonly string jsonContentCase02 = @"[{ ""operation"": ""buy"", ""unit-cost"": 10.00, ""quantity"": 10000 }, { ""operation"": ""sell"", ""unit-cost"": 20.00, ""quantity"": 5000 }, { ""operation"": ""sell"", ""unit-cost"": 5.00, ""quantity"": 5000 }]";
 
     private static readonly List<TaxToPayVO> expectedTaxesCase02 = new List<TaxToPayVO>
     {
-        new TaxToPayVO { Tax = 0.00m },
+        new TaxToPayVO { Tax = 0 },
         new TaxToPayVO { Tax = 10000.00m },
-        new TaxToPayVO { Tax = 0.00m }
+        new TaxToPayVO { Tax = 0 }
     };
 
     private static readonly string jsonContentCase03 = @"[{ ""operation"": ""buy"", ""unit-cost"": 10.00, ""quantity"": 10000 }, { ""operation"": ""sell"", ""unit-cost"": 5.00, ""quantity"": 5000 }, { ""operation"": ""sell"", ""unit-cost"": 20.00, ""quantity"": 3000 }]";
@@ -159,7 +159,7 @@ public class CapitalProfitProcesssorFactTests
     public void ProcessFile_ShouldCalculateTaxLineCorrectly_CaseOne_And_CaseTwo()
     {
         // Arrange
-        string jsonContentExpected = String.Concat(JsonSerializer.Serialize(expectedTaxesCase01), Environment.NewLine, JsonSerializer.Serialize(expectedTaxesCase02));
+        string jsonContentExpected = String.Concat(TaxToPayVO.ToJsonString(expectedTaxesCase01), Environment.NewLine, TaxToPayVO.ToJsonString(expectedTaxesCase02));
 
         string jsonContent = String.Concat(jsonContentCase01, Environment.NewLine, jsonContentCase02);
 
