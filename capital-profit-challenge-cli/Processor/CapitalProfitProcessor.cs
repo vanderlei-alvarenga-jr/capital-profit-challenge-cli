@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using capital_profit_challenge_cli.Exceptions;
 using capital_profit_challenge_cli.Model;
 
 namespace capital_profit_challenge_cli.Processor;
@@ -15,22 +16,28 @@ public class CapitalProfitProcessor
         List<string> taxLineList = new List<string>();
         List<string> operationsLineList = getOperationStringLines(fileContent);
 
-        if (!operationsLineList.Any())
+        for (int i = 0; i < operationsLineList.Count; i++)
         {
-            throw new ArgumentException("Invalid JSON content.");
-        }
+            string operationLine = operationsLineList[i];
+            
+            if (String.IsNullOrWhiteSpace(operationLine))
+                throw new CapitalProfitInputFormatException(CapitalProfitInputFormatException.INVALID_FORMAT_OPERATION_LINE_MESSAGE, (i + 1).ToString());
 
-        foreach (var operationLine in operationsLineList)
-        {
-            List<OperationVO>? operationsList = OperationVO.ToObjectList(operationLine);
+            List<OperationVO>? operationsList = null;
 
-            if (operationsList == null)
+            try
             {
-                Debug.WriteLine("Invalid JSON content line." + Environment.NewLine + "Content: " + operationLine);
-                continue;
+                operationsList = OperationVO.ToObjectList(operationLine);
+            }
+            catch (Exception ex)
+            {
+                throw new CapitalProfitInputFormatException(CapitalProfitInputFormatException.INVALID_FORMAT_OPERATION_LINE_MESSAGE, ex, (i + 1).ToString());
             }
 
-            taxList.Add(ProcessOperationsTaxLine(operationsList));
+            if (operationsList == null || operationsList.Count == 0)
+                throw new CapitalProfitInputFormatException(CapitalProfitInputFormatException.INVALID_FORMAT_OPERATION_LINE_MESSAGE, (i + 1).ToString());
+            
+            taxList.Add(ProcessOperationsTaxLine(operationsList, i));
         }
 
         foreach (var taxLine in taxList)
@@ -43,11 +50,11 @@ public class CapitalProfitProcessor
 
     private List<string> getOperationStringLines(string fileContent)
     {
-        List<string> lines = fileContent.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
+        List<string> lines = fileContent.Split(new[] { Environment.NewLine }, StringSplitOptions.None).ToList();
         return lines;
     }
 
-    public List<TaxToPayVO> ProcessOperationsTaxLine(List<OperationVO> operations)
+    public List<TaxToPayVO> ProcessOperationsTaxLine(List<OperationVO> operations, int lineIndex = 0)
     {
         var result = new List<TaxToPayVO>();
         decimal profitAccumulator = 0;
@@ -71,7 +78,7 @@ public class CapitalProfitProcessor
 
             if (currentOperation.Operation.ToUpper() == OperationEnum.BUY)
             {
-                if (currentWeightedAveragePrice == 0 && unitsBalance == 0)
+                if (currentWeightedAveragePrice == 0 || unitsBalance == 0)
                     currentWeightedAveragePrice = currentOperation.UnitCost;
                 else
                     currentWeightedAveragePrice = CalculateWeightedAveragePrice(currentWeightedAveragePrice, unitsBalance, currentOperation);
@@ -91,7 +98,6 @@ public class CapitalProfitProcessor
                 if (currentWeightedAveragePrice < currentOperation.UnitCost) // Profit
                 {
                     operationProfit = (currentOperation.UnitCost - currentWeightedAveragePrice) * currentOperation.Quantity;
-                    profitAccumulator += operationProfit;
                     Debug.WriteLine($"Operation: Profit! ({operationProfit})");
                 }
                 else if (currentWeightedAveragePrice > currentOperation.UnitCost) //Loss
@@ -103,30 +109,26 @@ public class CapitalProfitProcessor
 
                 var transactionTotalValue = currentOperation.UnitCost * currentOperation.Quantity;
                 Debug.WriteLine($"transactionTotalValue = {transactionTotalValue}");
-                if (transactionTotalValue > 20000.00m && operationProfit > operationLoss && profitAccumulator > 0)
+                if (transactionTotalValue > 20000.00m && operationProfit > operationLoss && profitAccumulator + operationProfit > 0) // Taxable profit
                 {
+                    profitAccumulator += operationProfit;
                     taxToPay.Tax = decimal.Parse((profitAccumulator * 0.20m).ToString("0.00"));
                     Debug.WriteLine($"Tax applied over profit! Reset \"profitAccumulator\".");
                     profitAccumulator = 0;
                 }
+                else if (transactionTotalValue > 20000.00m && operationProfit > operationLoss)
+                {
+                    profitAccumulator += operationProfit;
+                    Debug.WriteLine($"Tax not applied because losses acumulated are bigger than profit! \"LossesAccumulated\" minus profit.");
+                }
             }
-            else if (unitsBalance <= 0)
+            else if (currentOperation.Operation.ToUpper() == OperationEnum.SELL && (unitsBalance - currentOperation.Quantity) < 0)
             {
-                Debug.WriteLine($"ERROR: Invalid operation on operation #{i + 1}. Units balance is not enought to process operation.");
-                Debug.WriteLine($"unitsBalance = {unitsBalance}");
-                Debug.WriteLine($"profitAccumulator = {profitAccumulator}");
-                Debug.WriteLine($"TaxToPay = {taxToPay.Tax}");
-                Debug.WriteLine($"### End Operation #{i + 1} ###");
-                continue;
+                throw new CapitalProfitProcessException(CapitalProfitProcessException.NOT_ENOUGHT_UNIT_BALANCE_MESSAGE, (i + 1).ToString(), (lineIndex + 1).ToString());
             }
             else
             {
-                Debug.WriteLine($"ERROR: Invalid operation type on operation #{i + 1}.");
-                Debug.WriteLine($"unitsBalance = {unitsBalance}");
-                Debug.WriteLine($"profitAccumulator = {profitAccumulator}");
-                Debug.WriteLine($"TaxToPay = {taxToPay.Tax}");
-                Debug.WriteLine($"### End Operation #{i + 1} ###");
-                continue;
+                throw new CapitalProfitProcessException(CapitalProfitProcessException.INVALID_OPERATION_TYPE_MESSAGE, (i + 1).ToString(), (lineIndex + 1).ToString());
             }
 
             Debug.WriteLine($"unitsBalance = {unitsBalance}");

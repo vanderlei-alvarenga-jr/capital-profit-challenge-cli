@@ -1,11 +1,10 @@
 using Xunit;
 using capital_profit_challenge_cli.Model;
 using capital_profit_challenge_cli.Processor;
-using System.Text.Json;
 
 namespace capital_profit_challenge_cli_tests;
 
-public class CapitalProfitProcesssorFactTests
+public class CapitalProfitExampleCasesValidationTests
 {
     private readonly CapitalProfitProcessor _processor;
 
@@ -105,7 +104,7 @@ public class CapitalProfitProcesssorFactTests
         new TaxToPayVO { Tax = 2400.00m }
     };
 
-    public CapitalProfitProcesssorFactTests()
+    public CapitalProfitExampleCasesValidationTests()
     {
         _processor = new CapitalProfitProcessor();
     }
