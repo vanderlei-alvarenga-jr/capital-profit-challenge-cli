@@ -15,7 +15,10 @@ public class CapitalProfitCommand
     public async Task Process(string filePath)
     {
         FileInfo fileInfo = new FileInfo(filePath);
+        if(fileInfo == null || !fileInfo.Exists)
+            throw new FileNotFoundException("Arquivo não encontrado.", filePath);
         var fileContent = await File.ReadAllTextAsync(fileInfo.FullName);
-        processor.ProcessFile(fileContent);
+        var resultContent = processor.ProcessFile(fileContent);
+        await File.WriteAllTextAsync(String.Concat(fileInfo.Directory.FullName, "\\", fileInfo.Name.Replace(fileInfo.Extension, ""), "_result", fileInfo.Extension) , resultContent);
     }
 }
